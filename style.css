@@ -79,7 +79,7 @@ html {
 
 @media screen and (min-width: 0px) and (max-width: 600px) {
     .sidebar a {
-        font-size: 0.5rem;
+        font-size: calc(0.5rem + 1vw);
         flex-grow: 1;
     }
 }
@@ -142,7 +142,7 @@ html {
 
 @media screen and (min-width: 0px) {
     .appbar p {
-        font-size: 0.75rem;
+        font-size: calc(0.75rem + 1vw);
     }
 }
 
@@ -160,7 +160,7 @@ html {
 
 @font-face {
     font-family: "Inconsolata";
-    src: url("Inconsolata-VariableFont_wdth,wght.ttf") format("ttf");
+    src: url("/resources/Inconsolata-VariableFont_wdth_wght.ttf") format("ttf");
 }
 
 body {
@@ -184,7 +184,7 @@ p {
 
 @media screen and (min-width: 0px) {
     p {
-        font-size: calc(0.5rem);
+        font-size: calc(0.5rem + 1vw);
     }
 }
 
@@ -210,7 +210,7 @@ h1 {
 
 @media screen and (min-width: 0px) {
     h1 {
-        font-size: 1rem;
+        font-size: calc(1rem + 1vw);
     }
 }
 
@@ -228,19 +228,19 @@ h1 {
 
 @media screen and (min-width: 0px) {
     #title-sizedbox {
-        height: 5.5rem;
+        height: calc(5.5rem + 1vw);
     }
 }
 
 @media screen and (min-width: 400px) {
     #title-sizedbox {
-        font-size: calc(5.5rem + 1vw)
+        font-size: calc(5.5rem + 1vw);
     }
 }
 
 @media screen and (min-width: 1001px) {
     #title-sizedbox {
-        font-size: 6.25rem
+        font-size: 6.25rem;
     }
 }
 
@@ -252,7 +252,7 @@ h3 {
 
 @media screen and (min-width: 0px) {
     h3 {
-        font-size: 0.6rem;
+        font-size: calc(0.6rem + 1vw);
     }
 }
 
@@ -322,7 +322,7 @@ pre {
 
 @media screen and (min-width: 0px) {
     pre {
-        font-size: 0.45rem;
+        font-size: calc(0.45rem + 1vw);
     }
 }
 
@@ -366,8 +366,8 @@ figcaption {
 
 @media screen and (min-width: 0px) {
     .appbar-title-image {
-        width: 0.75rem;
-        height: 0.75rem;
+        width: calc(0.75rem + 1vw);
+        height: calc(0.75rem + 1vw);
     }
 }
 
