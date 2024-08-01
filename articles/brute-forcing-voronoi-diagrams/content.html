@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>tMario2111's blog</title>
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <link rel="stylesheet" href="content.css" type="text/css">
+
+    <script src="/appbar_sidebar.js"></script>
+    <script src="/index.js" defer></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <main>
+        <article>
+            <div class="content">
+                <h1>Brute forcing Voronoi diagrams</h1>
+                <div id="title-sizedbox"></div>
+                <section>
+                    <h3>What is a Voronoi diagram</h3>
+                    <p>A <a class="p-link" href="https://en.wikipedia.org/wiki/Voronoi_diagram">Voronoi diagram</a> is a
+                        partition of a plane into regions close to each of a given set of objects. Simply put, each
+                        point
+                        in the plane is included into the object it is closest to. For example, take a look at the
+                        following
+                        image:</p>
+                    <img src="resources/voronoi.png" id="voronoi-png" width="626" height="351" alt="An image displaying a typical Voronoi
+                 diagram">
+                    <p>Each object is represented with a small red square. Note how each color represents the points
+                        that are included in a certain region. While Voronoi diagrams have a lot of real life uses,
+                        they're also used in computer graphics. Unfortunately, the <a class="p-link"
+                            href="https://en.wikipedia.org/wiki/Fortune%27s_algorithm">efficient algorithm</a> for
+                        rendering
+                        Voronoi diagrams is quite complex, so we're going to explore a rather 'brute-force' approach.
+                    </p>
+                </section>
+                <section>
+                    <h3>Rendering Voronoi diagrams on the CPU</h3>
+                    <p>This approach is pretty straightforward: we are going to iterate over each point on the plane
+                        and calcutate the distances to all objects. The point is going to be included in the region with
+                        the minimum distance. I'm going to write the code in c++ and use
+                        <a class="p-link" href="https://www.sfml-dev.org/">SFML</a> for the graphics. Let's skip the
+                        boilerplate code and get straight to action (the project repo is linked at the bottom of the
+                        page).
+                    </p>
+                    <pre>
+// Voronoi.hpp
+struct Point
+{
+    sf::Vector2u position;
+    sf::Color color;
+};
+std::vector&lt;Point&gt; points;      // The objects of our Voronoi diagram (point = object)
+sf::VertexArray point_vertices; // Used to batch-draw all the objects
+sf::VertexArray map_vertices;   // Used to batch-draw the entire plane</pre>
+                    <p>With that done, let's get to the implementation. First, we're going to initialize the map
+                        vertices
+                        containing each point in the window.
+                    </p>
+                    <pre>
+void Voronoi::setupMap()
+{
+    this->map_vertices.setPrimitiveType(sf::PrimitiveType::Points);
+    this->map_vertices.resize(static_cast&lt;std::vector&lt;unsigned int&gt;::size_type>&gt;
+        (this->win.getSize().x) * this->win.getSize().y);
+}</pre>
+                    <p>The objects are going to be placed randomly. Let's take a look at the code that generates
+                        the diagram:
+                    </p>
+                    <pre>
+float Voronoi::squaredDistance(const sf::Vector2f a, const sf::Vector2f b)
+{
+    return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+}
+
+void Voronoi::processVoronoi()
+{
+    unsigned int k;
+    float distance{};
+    float min_distance{};
+    sf::Color min_color{};
+    unsigned int i, j;
+    for (i = 0; i &lt; this->win.getSize().x ; i++)
+    {
+        for (j = 0; j &lt; this->win.getSize().y; j++)
+        {
+            k = i * this->win.getSize().y + j;
+            this->map_vertices[k].position = sf::Vector2f{ static_cast&lt;float&gt;(i), static_cast&lt;float&gt;(j) };
+                                
+            min_distance = INFINITY;
+            for (const auto&amp; point : this->points)
+            {
+                distance = squaredDistance(this->map_vertices[k].position, static_cast&lt;sf::Vector2f&gt;(point.position));
+                if (distance &lt; min_distance)
+                {
+                    min_distance = distance;
+                    min_color = point.color;
+                }
+            }
+
+            this->map_vertices[k].color = min_color;
+        }
+    }
+}</pre>
+                    <p>Our work is done, we can draw our first Voronoi diagram. Sadly, this approach is really slow:
+                    </p>
+                    <video id="voronoi-cpu-mp4" width="500" height="400" playsinline autoplay muted loop>
+                        <source src="resources/voronoi_cpu.mp4" type="video/mp4">
+                    </video>
+                </section>
+                <section>
+                    <h3>Multithreaded Voronoi diagram</h3>
+                    <p>I paid for the whole CPU, I'm going to use the whole CPU! Let's throw some threads at it!
+                        We are going to split the screen into vertical, equal regions and process them separately.
+                        Let's revisit our process function:
+                    </p>
+                    <pre>
+void Voronoi::processVoronoi(unsigned int c_thread)
+// c_thread = current thread number (for example), c_thread could be between 0 and 7
+{
+    auto column_length = this->win.getSize().x / this->thread_count;
+    if (this->thread_count * column_length &lt; this->win.getSize().x)
+        column_length++;
+
+    unsigned int k;
+    float distance{};
+    float min_distance{};
+    sf::Color min_color{};
+    unsigned int i, j;
+    for (i = c_thread * column_length; i &lt; (c_thread + 1) * column_length; i++)
+    {
+        // Nothing is changed here
+        // [...]
+    }
+    this->finished[c_thread] = true; // finished is a bool array.
+}</pre>
+                    <p>Now let's call the function:</p>
+                    <pre>
+void Voronoi::setupMap()
+{
+    this->map_vertices.setPrimitiveType(sf::PrimitiveType::Points);
+    this->map_vertices.resize(static_cast&lt;std::vector&lt;unsigned int&gt;::size_type&gt;
+        (this->win.getSize().x) * this->win.getSize().y);
+
+    for (unsigned int i = 0; i &lt; this->thread_count; i++)
+        this->threads[i] = std::thread{ &amp;Voronoi::processVoronoiCPU, this, i };
+}</pre>
+                    <p>
+                        This is what we get:
+                    </p>
+                    <video id="voronoi-cpu-multithreaded-mp4" width="500" height="400" playsinline autoplay muted loop>
+                        <source src="resources/voronoi_cpu_multithreaded.mp4" type="video/mp4">
+                    </video>
+                    <p>
+                        I'm only using 4 threads because I couldn't capture the video with my CPU being at 100%, but
+                        using 'std::hardware_concurrency()' should be fine. While we almost halved the processing
+                        time, we can still do better (in terms of 'brute-force'). What hardware component is extremely
+                        good at doing parallel tasks? That's right, the GPU.
+                    </p>
+                </section>
+                <section>
+                    <h3>Rendering Voronoi diagrams on the GPU</h3>
+                    <p>Let's write a simple glsl shader:</p>
+                    <pre>
+#define POINT_COUNT 400
+
+uniform vec2 u_point_position[POINT_COUNT];
+uniform vec3 u_point_color[POINT_COUNT];
+
+void squaredDistance(in vec2 a, in vec2 b, out float distance)
+{
+    distance = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+}
+
+void main()
+{
+    vec2 position = gl_FragCoord.xy - vec2(0.5, 0.5);
+    float min = 999999.0;
+    float distance;
+    vec3 min_color;
+    for (int i = 0; i &lt; POINT_COUNT; i++)
+    {
+        squaredDistance(position, u_point_position[i], distance);
+        if (distance &lt; min)
+        {
+            min = distance;
+            min_color = u_point_color[i];
+        }
+    }
+    gl_FragColor = vec4(min_color.x, min_color.y, min_color.z, 1.0);
+}</pre>
+                    <p>We are doing pretty much the same thing, but on the GPU. The array of objects is passed to the
+                        shader using uniform arrays, which is not ideal (there's a size limit), but works alright
+                        in our case. Setting up the shader is quite easy:
+                    </p>
+                    <pre>
+void Voronoi::setupMapGPU()
+{
+    this->render_texture.create(this->win.getSize().x, this->win.getSize().y);
+
+    if (!this->shader.loadFromFile("src/shader.glsl", sf::Shader::Fragment))
+        exit(EXIT_FAILURE);
+    
+    sf::Vector2f point_position[POINT_COUNT];
+    sf::Vector3f point_color[POINT_COUNT];
+    for (unsigned int i = 0; i &lt; POINT_COUNT; i++)
+    {
+        point_position[i] = sf::Vector2f{ this->points[i].position };
+
+        // glsl uses [0, 1] range colors, so we need to do a conversion
+        point_color[i].x = static_cast&lt;float&gt;(this->points[i].color.r) / 255.f;
+        point_color[i].y = static_cast&lt;float&gt;(this->points[i].color.g) / 255.f;
+        point_color[i].z = static_cast&lt;float&gt;(this->points[i].color.b) / 255.f;
+    }
+
+    this->shader.setUniformArray("u_point_position", point_position, POINT_COUNT);
+    this->shader.setUniformArray("u_point_color", point_color, POINT_COUNT);
+
+    // Draw the diagram on a texture
+    this->sprite.setTexture(this->render_texture.getTexture());
+    this->present_texture.create(this->win.getSize().x, this->win.getSize().y);
+    this->present_texture.draw(this->sprite, &amp;this->shader);
+    this->present_texture.display();
+}</pre>
+                    <p>Unfortunately, I can't make a video of the diagram being created on the GPU, but here's the time:
+                        about a second. I'm using an integrated GPU, so the difference should be even more noticeable
+                        on a dedicated GPU. It should be pretty fast for a small number of objects and a smaller screen
+                        size.
+                    </p>
+                </section>
+                <p><a class="p-link" href="https://github.com/tMario2111/VoronoiDiagram">Source code</a></p>
+                <section>
+                    <h3>Bonus: using other distances</h3>
+                    <figure>
+                        <img src="resources/manhattan_distance.png" id="manhattan-distance-png" width="500" height="400"
+                            alt="An image displaying a Voronoi
+                    diagram using the Manhattan distance">
+                        <figcaption>Manhattan distance</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="resources/chebyshev_distance.png" id="chebyshev-distance-png" width="500" height="400"
+                            alt="An image displaying a Voronoi
+                    diagram using the Chebyshev distance">
+                        <figcaption>Chebyshev distance</figcaption>
+                    </figure>
+                </section>
+            </div>
+        </article>
+    </main>
+</body>
+
+</html>

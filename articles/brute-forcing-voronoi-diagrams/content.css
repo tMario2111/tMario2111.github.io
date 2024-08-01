@@ -1,0 +1,20 @@
+
+#voronoi-png {
+    aspect-ratio: 626/351;
+}
+
+#voronoi-cpu-mp4 {
+    aspect-ratio: 5 / 4;
+}
+
+#voronoi-cpu-multithreaded-mp4 {
+    aspect-ratio: 5 / 4;
+}
+
+#manhattan-distance-png {
+    aspect-ratio: 5 / 4;
+}
+
+#chebyshev-distance-png {
+    aspect-ratio: 5 / 4;
+}
