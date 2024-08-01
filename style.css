@@ -301,10 +301,10 @@ article {
 
 img {
     display: block;
-    max-inline-size: calc(100% - 10px);
+    max-inline-size: calc(100% - 30px);
     block-size: auto;
     object-fit: contain;
-    margin: auto;
+    margin: 0 auto;
     border: 5px solid var(--title-color);
 }
 
@@ -340,10 +340,10 @@ pre {
 
 video {
     display: block;
-    max-inline-size: calc(100% - 10px);
+    max-inline-size: calc(100% - 30px);
     block-size: auto;
     object-fit: contain;
-    margin: auto;
+    margin: 0 auto;
     border: 5px solid var(--title-color);
 }
 
