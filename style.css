@@ -163,10 +163,15 @@ html {
     src: url("/resources/Inconsolata-VariableFont_wdth_wght.ttf") format("ttf");
 }
 
+@font-face {
+    font-family: "Inconsolata-fallback";
+    src: url("/resources/Inconsolata-VariableFont_wdth_wght.woff2") format("woff2");
+}
+
 body {
     background-color: var(--main-background-color);
 
-    font-family: "Inconsolata", monospace;
+    font-family: "Inconsolata", monospace, "Inconsolata-fallback", monospace;
     font-weight: 600;
     font-style: normal;
     font-variation-settings:
