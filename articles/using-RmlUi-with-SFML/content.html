@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>tMario2111's blog</title>
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <link rel="stylesheet" href="content.css" type="text/css">
+
+    <script src="/appbar_sidebar.js"></script>
+    <script src="/index.js" defer></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <main>
+        <article>
+            <div class="content">
+                <h1>Using RmlUi with SFML</h1>
+                <div id="title-sizedbox"></div>
+                <section>
+                    <h3>What is RmlUi</h3>
+                    <p><a class="p-link" href="https://github.com/mikke89/RmlUi">RmlUi</a> is a C++ user interface
+                        library that converts HTML/CSS-like source files into a drawable format, making it easy to use
+                        web-like frontend for your applications' UI. The library only provides the render data, so you
+                        have to bring your own renderer. Thankfully, it comes packed with several backends that
+                        provide a good starting point. </p>
+                </section>
+                <section>
+                    <h3>Installing RmlUi</h3>
+                    <p><a class="p-link"
+                            href="https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/building_with_cmake.html">
+                            The official documentation</a> explains in great detail how to build the library, so I'm not
+                        going to focus on it. I prefer using vcpkg, it's really straightforward:
+                    </p>
+                    <pre>vcpkg install rmlui</pre>
+                </section>
+                <section>
+                    <h3>Integrating RmlUi with SFML</h3>
+                    <p>Now that we have installed the library, we have to add the corresponding backend files.
+                        For RmlUi 5.1 (which I'm using in this article), the files can be found in
+                        <a class="p-link" href="https://github.com/mikke89/RmlUi/releases/tag/5.1"> this release</a>
+                        (if you are using another version, make sure you are downloading the right release). The files
+                        we are going to need are:
+                    </p>
+                    <pre>
+RmlUi_Backend_SFML_GL2.cpp
+RmlUi_Backend.h
+RmlUi_Include_Windows.h
+RmlUi_Platform_SFML.cpp
+RmlUi_Platform_SFML.h
+RmlUi_Renderer_GL2.cpp
+RmlUi_Renderer_GL2.h</pre>
+                    <p>Add them to your project (I had some linking issues with "RmlUi_Backend_SFML_GL2.cpp", but
+                        turning it into a header file fixed the problem). Now, with that done, we can start writing
+                        code. I'm going to go along the <a class="p-link"
+                            href="https://github.com/mikke89/RmlUi?tab=readme-ov-file#example-document">example on the
+                            official repository</a>.</p>
+                    <p>The only things that are different from the example are the backend initialization and main loop:
+                    </p>
+                    <pre>
+// backend initialization
+Backend::Initialize(&quot;RmlUi in SFML&quot;, 1200, 800, false);
+auto&amp; win = data-&gt;window;
+
+Rml::SetRenderInterface(Backend::GetRenderInterface());
+Rml::SetSystemInterface(Backend::GetSystemInterface());
+
+[...]
+
+// main loop
+while (win.isOpen())
+{
+    Backend::ProcessEvents(context);
+
+    context-&gt;Update();
+
+    Backend::BeginFrame();
+    context-&gt;Render();
+    Backend::PresentFrame();
+}
+</pre>
+                    <p>Let's see the whole "main.cpp" file:</p>
+                    <pre>
+#include &lt;SFML/Graphics.hpp&gt;
+
+#include &lt;RmlUi/Core.h&gt;
+#include &lt;RmlUi/Debugger.h&gt;
+                        
+#include &quot;backend/RmlUi_Backend_SFML_GL2.h&quot;
+                        
+#include &lt;iostream&gt;
+                        
+struct ApplicationData {
+    bool show_text = true;
+    Rml::String animal = &quot;dog&quot;;
+} my_data;
+                        
+int main()
+{
+    Backend::Initialize(&quot;RmlUi in SFML&quot;, 1200, 800, false);
+    auto&amp; win = data-&gt;window;
+                        
+    Rml::SetRenderInterface(Backend::GetRenderInterface());
+    Rml::SetSystemInterface(Backend::GetSystemInterface());
+                        
+    Rml::Initialise();
+                        
+    auto context = Rml::CreateContext(&quot;RmlUi in SFML&quot;,
+        Rml::Vector2i{ static_cast&lt;int&gt;(win.getSize().x), static_cast&lt;int&gt;(win.getSize().y) });
+    if (!context)
+    {
+        std::cerr &lt;&lt; &quot;Could not initialize RmlUI context\n&quot;;
+            Rml::Shutdown();
+            return EXIT_FAILURE;
+    }
+
+    if (!Rml::LoadFontFace(&quot;Duran-Medium.ttf&quot;))
+    {
+        std::cerr &lt;&lt; &quot;Could not load font face\n&quot;;
+        Rml::Shutdown();
+        return EXIT_FAILURE;
+    }
+
+    if (Rml::DataModelConstructor constructor = context-&gt;CreateDataModel(&quot;animals&quot;))
+    {
+        constructor.Bind(&quot;show_text&quot;, &amp;my_data.show_text);
+        constructor.Bind(&quot;animal&quot;, &amp;my_data.animal);
+    }
+
+    auto document = context-&gt;LoadDocument(&quot;hello_world.rml&quot;);
+    if (!document)
+    {
+        std::cerr &lt;&lt; &quot;Could not load document\n&quot;;
+        Rml::Shutdown();
+        return EXIT_FAILURE;
+    }
+    document-&gt;Show();
+
+    while (win.isOpen())
+    {
+        Backend::ProcessEvents(context);
+
+        context-&gt;Update();
+
+        Backend::BeginFrame();
+        context-&gt;Render();
+        Backend::PresentFrame();
+    }
+
+    Rml::Shutdown();
+    Backend::Shutdown();
+
+    return EXIT_SUCCESS;
+}</pre>
+                    <p>Let's run our code:</p>
+                    <video id="hello-rmlui" width="640" height="360" playsinline autoplay muted loop>
+                        <source src="resources/hello-RmlUi.mp4" type="video/mp4">
+                    </video>
+                    <p>Although everything seems to work, you might notice a potential problem: the backend
+                        takes over the window initialization and main loop. If you are like me, you are probably using
+                        RmlUi on top of something (a game, a tool), and would like to preserve stuff like the main loop.
+                        Fortunately, this can be achieved with minor modifications. First, we need to change the
+                        "Backend::Initialize()" function to take a reference to a window (and the backend data,
+                        respectively):
+                    </p>
+                    <pre>
+// RmlUi_Backend_SFML_GL2.h
+struct BackendData {
+    SystemInterface_SFML system_interface;
+    RenderInterface_GL2_SFML render_interface;
+    sf::RenderWindow&amp; window;
+    bool running = true;
+    
+    BackendData(sf::RenderWindow&amp; window) : window{ window } { }
+};
+static Rml::UniquePtr&lt;BackendData&gt; data;
+    
+bool Backend::Initialize(sf::RenderWindow&amp; window)
+{
+    RMLUI_ASSERT(!data);
+
+    data = Rml::MakeUnique&lt;BackendData&gt;(window);
+
+    if (!data-&gt;window.isOpen())
+    {
+        data.reset();
+        return false;
+    }
+
+    // Optionally apply the SFML window to the system interface so that it can change its mouse cursor.
+    data-&gt;system_interface.SetWindow(&amp;data-&gt;window);
+
+    UpdateWindowDimensions(data-&gt;window, data-&gt;render_interface, nullptr);
+
+    return true;
+}</pre>
+                    <p>Moving on, we need to roll our own event loop. Taking inspiration from
+                        "Backend::ProcessEvents()", we can write our code like this:</p>
+                    <pre>
+for (sf::Event event{}; win.pollEvent(event);)
+{
+    switch (event.type)
+    {
+    case sf::Event::Resized:
+        UpdateWindowDimensions(win, data-&gt;render_interface, context);
+        break;
+    case sf::Event::Closed:
+        win.close();
+        break;
+    default:
+        RmlSFML::InputHandler(context, event);
+        break;
+    }
+}</pre>
+                    <p>Finally, we get to the rendering. Once again, we take a look at the "Backend::BeginFrame()" and
+                        "Backend::PresentFrame()", coming up with the following:
+                    </p>
+                    <pre>
+win.clear();
+
+data-&gt;render_interface.BeginFrame();
+context-&gt;Render();
+
+win.display();
+</pre>
+                    <p>Here's the whole "main.cpp" file:</p>
+                    <pre>
+#include &lt;SFML/Graphics.hpp&gt;
+
+#include &lt;RmlUi/Core.h&gt;
+#include &lt;RmlUi/Debugger.h&gt;
+
+#include &quot;backend/RmlUi_Backend_SFML_GL2.h&quot;
+
+#include &lt;iostream&gt;
+
+struct ApplicationData {
+    bool show_text = true;
+    Rml::String animal = &quot;dog&quot;;
+} my_data;
+
+int main()
+{
+    sf::RenderWindow win{ sf::VideoMode{ 1200, 800 }, &quot;RmlUi in SFML&quot;, sf::Style::Close | sf::Style::Resize };
+    win.setVerticalSyncEnabled(true);
+
+    Backend::Initialize(win);
+
+    Rml::SetRenderInterface(Backend::GetRenderInterface());
+    Rml::SetSystemInterface(Backend::GetSystemInterface());
+
+    Rml::Initialise();
+
+    auto context = Rml::CreateContext(&quot;RmlUi in SFML&quot;,
+        Rml::Vector2i{ static_cast&lt;int&gt;(win.getSize().x), static_cast&lt;int&gt;(win.getSize().y) });
+    if (!context)
+    {
+        std::cerr &lt;&lt; &quot;Could not initialize RmlUI context\n&quot;;
+        Rml::Shutdown();
+        return EXIT_FAILURE;
+    }
+
+    if (!Rml::LoadFontFace(&quot;Duran-Medium.ttf&quot;))
+    {
+        std::cerr &lt;&lt; &quot;Could not load font face\n&quot;;
+        Rml::Shutdown();
+        return EXIT_FAILURE;
+    }
+
+    if (Rml::DataModelConstructor constructor = context-&gt;CreateDataModel(&quot;animals&quot;))
+    {
+        constructor.Bind(&quot;show_text&quot;, &amp;my_data.show_text);
+        constructor.Bind(&quot;animal&quot;, &amp;my_data.animal);
+    }
+
+    auto document = context-&gt;LoadDocument(&quot;hello_world.rml&quot;);
+    if (!document)
+    {
+        std::cerr &lt;&lt; &quot;Could not load document\n&quot;;
+        Rml::Shutdown();
+        return EXIT_FAILURE;
+    }
+    document-&gt;Show();
+
+    while (win.isOpen())
+    {
+        for (sf::Event event{}; win.pollEvent(event);)
+        {
+            switch (event.type)
+            {
+            case sf::Event::Resized:
+                UpdateWindowDimensions(win, data-&gt;render_interface, context);
+                break;
+            case sf::Event::Closed:
+                win.close();
+                break;
+            default:
+                RmlSFML::InputHandler(context, event);
+                break;
+            }
+        }
+
+        context-&gt;Update();
+
+        win.clear();
+        data-&gt;render_interface.BeginFrame();
+        context-&gt;Render();
+        win.display();
+    }
+
+    Rml::Shutdown();
+    Backend::Shutdown();
+
+    return EXIT_SUCCESS;
+}
+</pre>
+                    <p>I think it looks a little bit better. Of course, this implementation isn't perfect and it might
+                        lack features, but
+                        it should be good enough for most use cases.
+                    </p>
+                </section>
+                <section>
+                    <h3>Implementing hot reload</h3>
+                    <p>Another nice thing about RmlUi is that, by using ".rml" and ".rcss" files, we can change the UI
+                        without recompiling the application, making it possible to hot reload it. All we have to do is
+                        reload the document when any ".rml" and ".rcss" files are modified. To achieve this, we can use
+                        &lt;filesystem&gt; (C++17 and above only). Let's look at a simple implementation:
+                    </p>
+                    <pre>
+const std::filesystem::path rml_path = &quot;hello_world.rml&quot;;
+const std::filesystem::path rcss_path = &quot;window.rcss&quot;;
+auto rml_lwt = std::filesystem::last_write_time(rml_path);
+auto rcss_lwt = std::filesystem::last_write_time(rcss_path);
+
+[...]
+
+while (win.isOpen())
+{
+    if (rml_lwt != std::filesystem::last_write_time(rml_path) || 
+        rcss_lwt != std::filesystem::last_write_time(rcss_path))
+    {
+        document-&gt;Close();
+        document = context-&gt;LoadDocument(rml_path.string());
+        document-&gt;ReloadStyleSheet();
+        document-&gt;Show();
+
+        rml_lwt = std::filesystem::last_write_time(rml_path);
+        rcss_lwt = std::filesystem::last_write_time(rcss_path);
+    }
+
+    [...]
+}
+</pre>
+                    <p>This is the result:</p>
+                    <video id="hot-reload" width="960" height="540" playsinline autoplay muted loop>
+                        <source src="resources/hot-reload.mp4" type="video/mp4">
+                    </video>
+                </section>
+            </div>
+        </article>
+    </main>
+</body>
+
+</html>
