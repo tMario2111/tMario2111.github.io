@@ -5,9 +5,12 @@
     <title>tMario2111's blog</title>
     <link rel="stylesheet" href="/style.css" type="text/css">
     <link rel="stylesheet" href="content.css" type="text/css">
+    <link rel="stylesheet" href="/prism.css" type="text/css">
+
 
     <script src="/appbar_sidebar.js"></script>
     <script src="/index.js" defer></script>
+    <script src="/prism.js"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,7 +37,7 @@
                             The official documentation</a> explains in great detail how to build the library, so I'm not
                         going to focus on it. I prefer using vcpkg, it's really straightforward:
                     </p>
-                    <pre>vcpkg install rmlui</pre>
+                    <pre><code class="language-">vcpkg install rmlui</code></pre>
                 </section>
                 <section>
                     <h3>Integrating RmlUi with SFML</h3>
@@ -44,8 +47,7 @@
                         (if you are using another version, make sure you are downloading the right release). The files
                         we are going to need are:
                     </p>
-                    <pre>
-RmlUi_Backend_SFML_GL2.cpp
+                    <pre><code class="language-"></code>RmlUi_Backend_SFML_GL2.cpp
 RmlUi_Backend.h
 RmlUi_Include_Windows.h
 RmlUi_Platform_SFML.cpp
@@ -59,8 +61,7 @@ RmlUi_Renderer_GL2.h</pre>
                             official repository</a>.</p>
                     <p>The only things that are different from the example are the backend initialization and main loop:
                     </p>
-                    <pre>
-// backend initialization
+                    <pre><code class="language-cpp">// backend initialization
 Backend::Initialize(&quot;RmlUi in SFML&quot;, 1200, 800, false);
 auto&amp; win = data-&gt;window;
 
@@ -79,11 +80,9 @@ while (win.isOpen())
     Backend::BeginFrame();
     context-&gt;Render();
     Backend::PresentFrame();
-}
-</pre>
+}</code></pre>
                     <p>Let's see the whole "main.cpp" file:</p>
-                    <pre>
-#include &lt;SFML/Graphics.hpp&gt;
+                    <pre><code class="language-cpp">#include &lt;SFML/Graphics.hpp&gt;
 
 #include &lt;RmlUi/Core.h&gt;
 #include &lt;RmlUi/Debugger.h&gt;
@@ -153,7 +152,7 @@ int main()
     Backend::Shutdown();
 
     return EXIT_SUCCESS;
-}</pre>
+}</pre></code>
                     <p>Let's run our code:</p>
                     <video id="hello-rmlui" width="640" height="360" playsinline autoplay muted loop>
                         <source src="resources/hello-RmlUi.mp4" type="video/mp4">
@@ -165,8 +164,7 @@ int main()
                         "Backend::Initialize()" function to take a reference to a window (and the backend data,
                         respectively):
                     </p>
-                    <pre>
-// RmlUi_Backend_SFML_GL2.h
+                    <pre><code class="language-cpp">// RmlUi_Backend_SFML_GL2.h
 struct BackendData {
     SystemInterface_SFML system_interface;
     RenderInterface_GL2_SFML render_interface;
@@ -195,11 +193,10 @@ bool Backend::Initialize(sf::RenderWindow&amp; window)
     UpdateWindowDimensions(data-&gt;window, data-&gt;render_interface, nullptr);
 
     return true;
-}</pre>
+}</pre></code>
                     <p>Moving on, we need to roll our own event loop. Taking inspiration from
                         "Backend::ProcessEvents()", we can write our code like this:</p>
-                    <pre>
-for (sf::Event event{}; win.pollEvent(event);)
+                    <pre><code class="language-cpp">for (sf::Event event{}; win.pollEvent(event);)
 {
     switch (event.type)
     {
@@ -213,21 +210,19 @@ for (sf::Event event{}; win.pollEvent(event);)
         RmlSFML::InputHandler(context, event);
         break;
     }
-}</pre>
+}</pre></code>
                     <p>Finally, we get to the rendering. Once again, we take a look at the "Backend::BeginFrame()" and
                         "Backend::PresentFrame()", coming up with the following:
                     </p>
-                    <pre>
-win.clear();
+                    <pre><code class="language-cpp">win.clear();
 
 data-&gt;render_interface.BeginFrame();
 context-&gt;Render();
 
 win.display();
-</pre>
+</pre></code>
                     <p>Here's the whole "main.cpp" file:</p>
-                    <pre>
-#include &lt;SFML/Graphics.hpp&gt;
+                    <pre><code class="language-cpp">#include &lt;SFML/Graphics.hpp&gt;
 
 #include &lt;RmlUi/Core.h&gt;
 #include &lt;RmlUi/Debugger.h&gt;
@@ -315,9 +310,9 @@ int main()
 
     return EXIT_SUCCESS;
 }
-</pre>
-                    <p>I think it looks a little bit better. Of course, this implementation isn't perfect and it might
-                        lack features, but
+</pre></code>
+                    <p>I think it looks better. Of course, this implementation isn't perfect and it might
+                        be missing some features, but
                         it should be good enough for most use cases.
                     </p>
                 </section>
@@ -328,8 +323,7 @@ int main()
                         reload the document when any ".rml" and ".rcss" files are modified. To achieve this, we can use
                         &lt;filesystem&gt; (C++17 and above only). Let's look at a simple implementation:
                     </p>
-                    <pre>
-const std::filesystem::path rml_path = &quot;hello_world.rml&quot;;
+                    <pre><code class="language-cpp">const std::filesystem::path rml_path = &quot;hello_world.rml&quot;;
 const std::filesystem::path rcss_path = &quot;window.rcss&quot;;
 auto rml_lwt = std::filesystem::last_write_time(rml_path);
 auto rcss_lwt = std::filesystem::last_write_time(rcss_path);
@@ -352,11 +346,16 @@ while (win.isOpen())
 
     [...]
 }
-</pre>
+</pre></code>
                     <p>This is the result:</p>
                     <video id="hot-reload" width="960" height="540" playsinline autoplay muted loop>
                         <source src="resources/hot-reload.mp4" type="video/mp4">
                     </video>
+                    <p>Of course, this is a very basic implementation of hot reload. A somewhat better approach
+                        would be to automatically track all the ".rml" and ".rcss" files and reload on any change,
+                        but that goes beyond the scope of this tutorial. Make sure to check out the <a class="p-link"
+                            href="https://github.com/tMario2111/RmlUi-SFML-example">source code</a>
+                    </p>
                 </section>
             </div>
         </article>

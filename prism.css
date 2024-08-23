@@ -1,0 +1,135 @@
+/* PrismJS 1.29.0 */
+
+code[class*=language-],
+pre[class*=language-] {
+    color: #fff;
+    background: 0 0;
+    background-color: #0f0f0f;
+    font-family: "Inconsolata", monospace;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    /* line-height: 1.5; */
+
+    overflow: auto;
+
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none
+}
+
+@media screen and (min-width: 0px) {
+
+    code[class*=language-],
+    pre[class*=language-] {
+        font-size: calc(0.45rem + 1vw);
+    }
+}
+
+@media screen and (min-width: 400px) {
+
+    code[class*=language-],
+    pre[class*=language-] {
+        font-size: calc(0.45rem + 1vw);
+    }
+}
+
+@media screen and (min-width: 1001px) {
+
+    code[class*=language-],
+    pre[class*=language-] {
+        font-size: 0.9rem;
+    }
+}
+
+@media print {
+
+    code[class*=language-],
+    pre[class*=language-] {
+        text-shadow: none
+    }
+}
+
+:not(pre)>code[class*=language-] {
+    padding: .15em .2em .05em;
+    border-radius: .3em;
+    border: .13em solid #7a6651;
+    box-shadow: 1px 1px .3em -.1em #000 inset;
+    white-space: normal
+}
+
+.token.cdata,
+.token.comment,
+.token.doctype,
+.token.prolog {
+    color: #997f66
+}
+
+.token.punctuation {
+    opacity: .7
+}
+
+.token.namespace {
+    opacity: .7
+}
+
+.token.boolean,
+.token.constant,
+.token.number,
+.token.property,
+.token.symbol,
+.token.tag {
+    color: #d1939e
+}
+
+.token.attr-name,
+.token.builtin,
+.token.char,
+.token.inserted,
+.token.selector,
+.token.string {
+    color: #bce051
+}
+
+.language-css .token.string,
+.style .token.string,
+.token.entity,
+.token.operator,
+.token.url,
+.token.variable {
+    color: #f4b73d
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: #d1939e
+}
+
+.token.important,
+.token.regex {
+    color: #e90
+}
+
+.token.bold,
+.token.important {
+    font-weight: 700
+}
+
+.token.italic {
+    font-style: italic
+}
+
+.token.entity {
+    cursor: help
+}
+
+.token.deleted {
+    color: red
+}

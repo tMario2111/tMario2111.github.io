@@ -5,9 +5,11 @@
     <title>tMario2111's blog</title>
     <link rel="stylesheet" href="/style.css" type="text/css">
     <link rel="stylesheet" href="content.css" type="text/css">
+    <link rel="stylesheet" href="/prism.css" type="text/css">
 
     <script src="/appbar_sidebar.js"></script>
     <script src="/index.js" defer></script>
+    <script src="/prism.js"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,8 +48,7 @@
                         boilerplate code and get straight to action (the project repo is linked at the bottom of the
                         page).
                     </p>
-                    <pre>
-// Voronoi.hpp
+                    <pre><code class="language-cpp">// Voronoi.hpp
 struct Point
 {
     sf::Vector2u position;
@@ -55,23 +56,21 @@ struct Point
 };
 std::vector&lt;Point&gt; points;      // The objects of our Voronoi diagram (point = object)
 sf::VertexArray point_vertices; // Used to batch-draw all the objects
-sf::VertexArray map_vertices;   // Used to batch-draw the entire plane</pre>
+sf::VertexArray map_vertices;   // Used to batch-draw the entire plane</pre></code>
                     <p>With that done, let's get to the implementation. First, we're going to initialize the map
                         vertices
                         containing each point in the window.
                     </p>
-                    <pre>
-void Voronoi::setupMap()
+                    <pre><code class="language-cpp">void Voronoi::setupMap()
 {
     this->map_vertices.setPrimitiveType(sf::PrimitiveType::Points);
     this->map_vertices.resize(static_cast&lt;std::vector&lt;unsigned int&gt;::size_type>&gt;
         (this->win.getSize().x) * this->win.getSize().y);
-}</pre>
+}</pre></code>
                     <p>The objects are going to be placed randomly. Let's take a look at the code that generates
                         the diagram:
                     </p>
-                    <pre>
-float Voronoi::squaredDistance(const sf::Vector2f a, const sf::Vector2f b)
+                    <pre><code class="language-cpp">float Voronoi::squaredDistance(const sf::Vector2f a, const sf::Vector2f b)
 {
     return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
 }
@@ -104,7 +103,7 @@ void Voronoi::processVoronoi()
             this->map_vertices[k].color = min_color;
         }
     }
-}</pre>
+}</pre></code>
                     <p>Our work is done, we can draw our first Voronoi diagram. Sadly, this approach is really slow:
                     </p>
                     <video id="voronoi-cpu-mp4" width="500" height="400" playsinline autoplay muted loop>
@@ -117,8 +116,7 @@ void Voronoi::processVoronoi()
                         We are going to split the screen into vertical, equal regions and process them separately.
                         Let's revisit our process function:
                     </p>
-                    <pre>
-void Voronoi::processVoronoi(unsigned int c_thread)
+                    <pre><code class="language-cpp">void Voronoi::processVoronoi(unsigned int c_thread)
 // c_thread = current thread number (for example), c_thread could be between 0 and 7
 {
     auto column_length = this->win.getSize().x / this->thread_count;
@@ -136,10 +134,9 @@ void Voronoi::processVoronoi(unsigned int c_thread)
         // [...]
     }
     this->finished[c_thread] = true; // finished is a bool array.
-}</pre>
+}</pre></code>
                     <p>Now let's call the function:</p>
-                    <pre>
-void Voronoi::setupMap()
+                    <pre><code class="language-cpp">void Voronoi::setupMap()
 {
     this->map_vertices.setPrimitiveType(sf::PrimitiveType::Points);
     this->map_vertices.resize(static_cast&lt;std::vector&lt;unsigned int&gt;::size_type&gt;
@@ -147,7 +144,7 @@ void Voronoi::setupMap()
 
     for (unsigned int i = 0; i &lt; this->thread_count; i++)
         this->threads[i] = std::thread{ &amp;Voronoi::processVoronoiCPU, this, i };
-}</pre>
+}</pre></code>
                     <p>
                         This is what we get:
                     </p>
@@ -164,8 +161,7 @@ void Voronoi::setupMap()
                 <section>
                     <h3>Rendering Voronoi diagrams on the GPU</h3>
                     <p>Let's write a simple glsl shader:</p>
-                    <pre>
-#define POINT_COUNT 400
+                    <pre><code class="language-cpp">#define POINT_COUNT 400
 
 uniform vec2 u_point_position[POINT_COUNT];
 uniform vec3 u_point_color[POINT_COUNT];
@@ -191,13 +187,12 @@ void main()
         }
     }
     gl_FragColor = vec4(min_color.x, min_color.y, min_color.z, 1.0);
-}</pre>
+}</pre></code>
                     <p>We are doing pretty much the same thing, but on the GPU. The array of objects is passed to the
                         shader using uniform arrays, which is not ideal (there's a size limit), but works alright
                         in our case. Setting up the shader is quite easy:
                     </p>
-                    <pre>
-void Voronoi::setupMapGPU()
+                    <pre><code class="language-cpp">void Voronoi::setupMapGPU()
 {
     this->render_texture.create(this->win.getSize().x, this->win.getSize().y);
 
@@ -224,7 +219,7 @@ void Voronoi::setupMapGPU()
     this->present_texture.create(this->win.getSize().x, this->win.getSize().y);
     this->present_texture.draw(this->sprite, &amp;this->shader);
     this->present_texture.display();
-}</pre>
+}</pre></code>
                     <p>Unfortunately, I can't make a video of the diagram being created on the GPU, but here's the time:
                         about a second. I'm using an integrated GPU, so the difference should be even more noticeable
                         on a dedicated GPU. It should be pretty fast for a small number of objects and a smaller screen
